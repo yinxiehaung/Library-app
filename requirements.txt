@@ -1,0 +1,8 @@
+Flask
+psycopg2-binary
+Flask-SQLAlchemy
+Flask-Migrate
+flask-restx
+Flask-JWT-Extended
+bcrypt
+requests

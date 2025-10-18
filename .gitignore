@@ -1,0 +1,23 @@
+# 1. 密碼和環境變數
+.env
+
+# 2. Python 相關的快取和日誌
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# 3. Python 虛擬環境
+venv/
+.venv/
+env/
+
+# 4. 作業系統產生的垃圾檔案
+.DS_Store
+
+# 5. IDE (如 VS Code) 的設定檔
+.vscode/
+
+# 6. Docker 持久化資料 
+postgres_data/
