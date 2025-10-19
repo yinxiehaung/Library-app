@@ -59,5 +59,40 @@ class BookList(Resource):
         except Exception as e:
             db.session.rollback()
             return {"error":"無法將書籍存入資料庫", "message": str(e)}, 500
+@book_ns.route('/<int:book_id>')
+@book_ns.param('book_id','書籍的唯一 ID')
+class BookItem(Resource):
+    @book_ns.doc('get_book',description='獲取某一本書的詳細資料')
+    @book_ns.marshal_with(book_model)
+    def get(self,book_id):
+        return Book.query.get_or_404(book_id)
+    @book_ns.doc('update_book',description='更新某一本書的資料')
+    @book_ns.expect(book_payload, validate=True)
+    @book_ns.marshal_with(book_model)
+    def put(self,book_id):
+        book_to_update = Book.query.get_or_404(book_id)
+        data = request.get_json()
+        book_to_update.name = data['name']
+        book_to_update.author = data['author']
+        book_to_update.isbn = data['isbn']
+        book_to_update.publication_date=data['publication_date']
+        book_to_update.description=data['description']
+        book_to_update.category=data['category']
+        book_to_update.language=data['language']
+        book_to_update.cover_image_url=data['cover_image_url']
+        db.session.commit()
+        return book_to_update
+    @book_ns.doc('delete_book',description='刪除某一本書')
+    @book_ns.response(204,'書籍已刪除')
+    def delete(self, book_id):
+        book_to_delete = Book.query_get_or_404(book_id)
+        db.session.delete(book_to_delete)
+        db.session.commit()
+        return '',204
+
+
+
+
+
 def register_routes(api):
     api.add_namespace(book_ns)
