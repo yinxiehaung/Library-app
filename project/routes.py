@@ -1,6 +1,5 @@
 # project/routes.py
-
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 from flask_restx import Api, Resource, fields, Namespace
 from .models import Book
 from .extensions import db
@@ -23,10 +22,8 @@ book_model = book_ns.clone('BookModel', book_payload, {
     'id': fields.Integer(readonly=True, description='書籍的唯一 ID')
 })
 
-# 建立一個 Blueprint 物件，'api' 是名稱，__name__ 是必須的
 api_bp = Blueprint('api', __name__)
 
-# 注意！路由裝飾器從 @app.route 改成了 @api_bp.route
 @book_ns.route('/')
 class BookList(Resource):
     @book_ns.doc('list_books',description='獲取所有書籍列表')
@@ -40,20 +37,27 @@ class BookList(Resource):
         data = request.get_json()
         pub_date = data.get('publication_date')
         if pub_date:
-            pub_date = datetime.strptime(pub_date,'%Y-%m-%d').date()
-        new_book = Book(
+            try:
+                pub_date = datetime.strptime(pub_date,'%Y-%m-%d').date()
+            except ValueError:
+                return {"error":"日期格式錯誤，請使用 YYYY-MM-DD"},400
+        try:
+            new_book = Book(
                 name=data['name'],
                 author=data['author'],
                 isbn=data['isbn'],
-                publication_data=pub_date,
+                publication_date=pub_date,
                 publisher=data.get('publisher'),
                 description=data.get('description'),
                 category=data.get('category'),
                 language=data.get('language'),
                 cover_image_url=data.get('cover_image_url')
-        )
-        db.session.add(new_book)
-        de.session.commit()
-        return new_book,201
+            )
+            db.session.add(new_book)
+            db.session.commit()
+            return new_book,201
+        except Exception as e:
+            db.session.rollback()
+            return {"error":"無法將書籍存入資料庫", "message": str(e)}, 500
 def register_routes(api):
     api.add_namespace(book_ns)
