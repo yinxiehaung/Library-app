@@ -1,8 +1,10 @@
 Flask
 psycopg2-binary
+bcrypt
 Flask-SQLAlchemy
 Flask-Migrate
 flask-restx
 Flask-JWT-Extended
 bcrypt
 requests
+python-dotenv

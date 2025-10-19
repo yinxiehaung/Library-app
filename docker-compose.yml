@@ -9,6 +9,7 @@ services:
     volumes:
       - .:/app
     environment:
+      - FLASK_APP=run.py
       - DB_HOST=db
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
