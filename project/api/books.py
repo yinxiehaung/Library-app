@@ -1,8 +1,7 @@
-# project/routes.py
 from flask import Blueprint, jsonify, request
 from flask_restx import Api, Resource, fields, Namespace
-from .models import Book
-from .extensions import db
+from ..models import Book
+from ..extensions import db
 from datetime import datetime
 
 book_ns = Namespace('books', description='書籍相關操作')
@@ -59,6 +58,7 @@ class BookList(Resource):
         except Exception as e:
             db.session.rollback()
             return {"error":"無法將書籍存入資料庫", "message": str(e)}, 500
+
 @book_ns.route('/<int:book_id>')
 @book_ns.param('book_id','書籍的唯一 ID')
 class BookItem(Resource):
@@ -76,23 +76,26 @@ class BookItem(Resource):
         book_to_update.author = data['author']
         book_to_update.isbn = data['isbn']
         book_to_update.publication_date=data['publication_date']
-        book_to_update.description=data['description']
-        book_to_update.category=data['category']
-        book_to_update.language=data['language']
-        book_to_update.cover_image_url=data['cover_image_url']
+        book_to_update.description=data.get('description')
+        book_to_update.category=data.get('category')
+        book_to_update.language=data.get('language')
+        book_to_update.cover_image_url=data.get('cover_image_url')
         db.session.commit()
         return book_to_update
     @book_ns.doc('delete_book',description='刪除某一本書')
     @book_ns.response(204,'書籍已刪除')
     def delete(self, book_id):
-        book_to_delete = Book.query_get_or_404(book_id)
+        book_to_delete = Book.query.get_or_404(book_id)
         db.session.delete(book_to_delete)
         db.session.commit()
         return '',204
 
-
-
-
-
-def register_routes(api):
-    api.add_namespace(book_ns)
+library_ns = Namespace('libraries',description='圖書館相關操作')
+library_payload = library_ns.model('LibraryPayload', {
+    'name':fields.String(required=True, description='圖書館名稱'),
+    'address':fields.String(required=True, description='圖書館地址'),
+    'phone':fields.String(required=True, description='圖書館電話')
+})
+library_model = library_ns.clone('LibraryModel', library_payload, {
+    'id':fields.Integer(readonly=True, description='圖書館唯一的id')
+})
