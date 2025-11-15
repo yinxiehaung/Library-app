@@ -1,6 +1,6 @@
 Flask
 psycopg2-binary
-bcrypt
+flask-bcrypt
 Flask-SQLAlchemy
 Flask-Migrate
 flask-restx

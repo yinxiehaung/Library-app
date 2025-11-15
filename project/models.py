@@ -1,37 +1,21 @@
 from  .extensions import db
-
-class Users(db.Model):
-    _id = db.Column('id',db.Integer, primary_key=True);
-    name = db.Column('name', db.String(100),nullable=False)
+from datetime import datetime
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    #name = db.Column('name', db.String(100),nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(100),unique=True,nullable=False)
-    def __init__(self, name, email):
-        self.name = name
-        self.email = email
-class Book(db.Model):
-    __tablename__ = 'books'
-    id = db.Column(db.Integer,primary_key=True)
-    name = db.Column(db.String(255), nullable = False)
-    isbn = db.Column(db.String(13), unique=True, nullable=False)
-    author = db.Column(db.String(100), nullable=False)
-    publication_date = db.Column(db.Date)
-    publisher = db.Column(db.String(100))
-    description = db.Column(db.Text)
-    category = db.Column(db.String(50))
-    language = db.Column(db.String(30))
-    cover_image_url = db.Column(db.String(265))
-    copies = db.relationship('BookCopy', backref = 'book', lazy = True)
-class Library(db.Model):
-    __tablename__ = 'libraries'
+    password_hash = db.Column(db.String(128), nullable=False)
+    def __repr__(self):
+        return f'<User {self.username}>' 
+class Loan(db.Model):
+    __tablename__ = 'loans'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    address = db.Column(db.String(255))
-    phone = db.Column(db.String(20))
-class BookCopy(db.Model):
-    __tablename__ = 'book_copies'
-    id = db.Column(db.Integer, primary_key=True)
-    book_id = db.Column(db.Integer, db.ForeignKey('books.id'), nullable=False)
-    library_id = db.Column(db.Integer, db.ForeignKey('libraries.id'),nullable=False)
-    call_number = db.Column(db.String(50))
-    status = db.Column(db.Integer, nullable=False, default=0)
-
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    book_title=db.Column(db.String(255),nullable=False)
+    book_isbn=db.Column(db.String(20))
+    loan_date=db.Column(db.DateTime,nullable=False,default=datetime.utcnow)
+    return_date=db.Column(db.DateTime)
+    user = db.relationship('User',backref=db.backref('loans',lazy=True))
 

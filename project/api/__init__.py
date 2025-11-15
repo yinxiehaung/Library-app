@@ -1,9 +1,11 @@
 from flask_restx import Api
-from .books import book_ns
-from .libraries import library_ns
-from .copies import copy_ns
+from .auth import auth_ns
+from .loans import loan_ns
+from .recommend import recommend_ns
+from .search import search_ns
 
 def register_routes(api: Api):
-    api.add_namespace(book_ns)
-    api.add_namespace(library_ns)
-    api.add_namespace(copy_ns)
+    api.add_namespace(auth_ns)
+    api.add_namespace(loan_ns)
+    api.add_namespace(recommend_ns)
+    api.add_namespace(search_ns)
