@@ -27,8 +27,9 @@ def create_app(config_class=Config):
             title='花蓮圖書館整合系統 API',
             description='一個由 Flask-RestX 自動產生的專業 API 文件',
             doc='/doc/',
-            authorizations=authorizations,  # <-- 3. 載入您剛剛定義的方案
-            security='jwt_auth'          # <-- 4. 告訴 Swagger UI 全域套用這個方案
+            authorizations=authorizations,             
+            security='jwt_auth',
+            prefix='/api'
     )
     register_routes(api)
     return app

@@ -21,3 +21,19 @@ env/
 
 # 6. Docker 持久化資料 
 postgres_data/
+
+#7. 前端相依套件 (極度重要！這個資料夾非常大)
+
+frontend/node_modules/
+
+#8. 前端建置產物 (這是編譯後的結果，不需要上傳)
+
+frontend/build/
+frontend/dist/
+
+#9. npm debug log
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+

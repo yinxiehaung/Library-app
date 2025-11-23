@@ -4,8 +4,6 @@ services:
   # 服務一：我們的 Python API
   api:
     build: .
-    ports:
-      - "5000:5000"
     volumes:
       - .:/app
     environment:
@@ -17,7 +15,7 @@ services:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - N8N_BASIC_SEARCH_URL=${N8N_BASIC_SEARCH_URL}
       - N8N_ADVANCED_SEARCH_URL=${N8N_ADVANCED_SEARCH_URL}
-      - N8N_RECOMMEND_URL=${N8N_RECOMMEND_URL  
+      - N8N_RECOMMEND_URL=${N8N_RECOMMEND_URL} 
     depends_on:
       - db
 
@@ -32,6 +30,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+  frontend:
+    build: ./frontend  
+  
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"    
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - frontend
 volumes:
   postgres_data:

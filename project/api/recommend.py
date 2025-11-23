@@ -2,7 +2,7 @@ import os
 import requests
 from flask import jsonify
 from flask_restx import Resource, Namespace
-# 匯入 JWT 工具和您的 Loan 模型
+# 匯入 JWT 工具 Loan 模型
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..models import Loan
 from ..extensions import db
@@ -18,7 +18,7 @@ class RecommendationGateway(Resource):
                       description='獲取個人化的書籍推薦 (必須登入)')
     @recommend_ns.response(401, '未經授權 (JWT 令牌無效或未提供)')
     @recommend_ns.response(503, 'N8N 推薦模組無回應')
-    @jwt_required()  # <-- 【關鍵】 加上這個「保護罩」
+    @jwt_required()
     def post(self):
         """
         獲取 RAG 推薦。
@@ -31,7 +31,7 @@ class RecommendationGateway(Resource):
         except Exception as e:
             return {"error": "無效的 JWT 身份", "message": str(e)}, 422 # 422 Unprocessable Entity
 
-        # 4. 【核心邏輯 1】 查詢您「自己」的 PostgreSQL 資料庫
+        # 4. 【核心邏輯 1】 查詢「自己」的 PostgreSQL 資料庫
         try:
             my_loans = Loan.query.filter_by(user_id=current_user_id).order_by(Loan.loan_date.desc()).limit(20).all()
             

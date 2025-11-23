@@ -24,7 +24,7 @@ class BasicSearch(Resource):
         n8n_url = os.getenv('N8N_BASIC_SEARCH_URL')
 
         try:
-            # 您的 API 閘道邏輯：轉發請求
+            # API 閘道邏輯：轉發請求
             response = requests.post(n8n_url, json=data, timeout=10)
             response.raise_for_status()
             return response.json(), response.status_code
@@ -44,7 +44,7 @@ class AdvancedSearch(Resource):
         n8n_url = os.getenv('N8N_ADVANCED_SEARCH_URL')
 
         try:
-            # 您的 API 閘道邏輯：轉發請求
+            # API 閘道邏輯：轉發請求
             response = requests.post(n8n_url, json=data, timeout=10)
             response.raise_for_status()
             return response.json(), response.status_code
