@@ -3,8 +3,9 @@ WORKDIR /app
 
 # 複製設定檔並安裝套件
 COPY package*.json ./
-RUN npm install
 
+RUN npm install
+#RUN npm install -D rollup@3.29.4 --force
 # 複製所有程式碼
 COPY . .
 
