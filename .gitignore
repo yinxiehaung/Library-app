@@ -32,8 +32,12 @@ frontend/build/
 frontend/dist/
 
 #9. npm debug log
-
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+#10.
+certs/
+*.key
+*.crt
+*.pem
