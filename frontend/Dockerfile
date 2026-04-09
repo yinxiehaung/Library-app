@@ -23,7 +23,7 @@ COPY --from=build /app/build /usr/share/nginx/html
 
 # 確保 Nginx 設定正確 (這行是為了讓 React Router 正常運作)
 # 我們直接在命令列寫入一個簡單的 nginx 配置，讓所有 404 都導向 index.html
-RUN echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
+RUN echo 'server { listen 80; root /usr/share/nginx/html; index index.html; location /api/ { proxy_pass http://api-1:5000/; } location / { try_files $uri $uri/ /index.html; } }' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

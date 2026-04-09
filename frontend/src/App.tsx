@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { loginUser, registerUser } from "./api/auth";
 import { getMyLoans, createLoan } from "./api/loans";
+import LibraryScraper from './components/LibraryScraper';
 
 /**
  * Hualien United Libraries — OPAC (Frontend)
@@ -644,7 +645,6 @@ const FIELD_OPTIONS = [
   { k: "isbn", label: "ISBN" },
 ];
 
-// 🔻 已移除「一般搜尋 / 智慧搜尋」的選項與狀態
 function SearchStrip({
   size = "lg",
   onSearch,
@@ -658,7 +658,14 @@ function SearchStrip({
   const [field, setField] = useState("any");
   const submit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    onSearch?.({ rows: [{ field, term }] });
+    if (field == "any") {
+	onSearch?.({ 
+	  isExternal:true,
+	  term:term
+	});
+    } else {
+	onSearch?.({rows:[{field,term}]})
+    }
   };
   return (
     <div
@@ -783,6 +790,8 @@ function AdvancedSearchPage({
 
   const submit = () => {
     const qrows = rows.filter((r) => r.term.trim().length > 0);
+    const combinedTerm = qrows.map(r => r.term).join(' ');
+    const isExternalSearch = true;
     const q = {
       rows: qrows.length ? qrows : [{ field: "any", term: "" }],
     };
@@ -797,7 +806,21 @@ function AdvancedSearchPage({
       statuses: [],
       subjects: [],
     };
-    onSearch?.(q, initFilters);
+    if (isExternalSearch) {
+	onSearch?.({
+	  isExternal:true,
+	  term:combinedTerm,
+	  pages:3,
+	  filters:{
+	    lang,
+	    type,
+	    lib,
+	    yearRange:[yearFrom,yearTo]
+	  }
+	}, null);
+    } else {
+    	onSearch?.(q, initFilters);
+    }
   };
 
   return (
@@ -2719,7 +2742,7 @@ export default function App() {
     name: "home",
   });
   const [assistantOpen, setAssistantOpen] = useState(false);
-
+  const [isScraping, setIsScraping] = useState(false);
   // 書目資料：先從 localStorage，其次 SEED_BOOKS，最後嘗試載入後端 API
   const [books, setBooks] = useState<any[]>(() => {
     try {
@@ -2846,9 +2869,59 @@ export default function App() {
     setAssistantOpen(false);
   };
   const goHome = () => setRoute({ name: "home" });
-  const goResults = (q: any, initFilters?: any) =>
+  const navigateToResults = (q: any, initFilters?: any) =>
     setRoute({ name: "results", q, initFilters });
+  const executeSearch = async(q: any, initFilters?: any) => {
+    let searchTerm = "";
+    if (typeof q === "string") {
+	searchTerm = q;
+    } else if (q?.term){
+	searchTerm = q.term;
+    } else if (q?.rows && q.rows.length > 0) {
+	searchTerm = q.rows.map((r:any)=>r.term).join(" ");
+    }
+    if (!searchTerm.trim()) {
+	navigateToResults(q, initFilters);
+	return;
+    }
+    setIsScraping(true);
+    try {
+	const res = await fetch(`/api/scraper/scrape?q=${encodeURIComponent(searchTerm)}&pages=1`);
+	if (!res.ok) throw new Error(`HTTP Error:${res.status}`);
+	const data = await res.json();
 
+	if (data.status === 'success' && data.data) {
+	  const scrapedBooks = data.data.map((b:any, index:number) => ({
+	    id:`ndhu-scraped-${Date.now()}-${index}`,
+	    title:b.title,
+	    author:b.author,
+	    isbn:b.isbn !== "無ISBN"?b.isbn:"",
+	    year:new Date().getFullYear(),
+	    language:"繁體中文",
+	    format:"紙本",
+	    cover: b.image_url || "https://via.placeholder.com/300x400?text=No+Cover",
+	    subjects:["東華大學館藏","外部抓取"],
+	    description:"此資料為即時從東華大學圖書館系統跨校抓取之館藏。",
+	    availability:[
+	      {
+		lib:"東華大學圖書館",
+		callno:"外部館藏",
+		floor:"依東華系統為準",
+		status:b.availability.includes("0 本館藏 可借閱") ? "Check out":"Available",
+		due:null,
+	      }
+	    ]
+	  }));
+	  setBooks(scrapedBooks);
+	}
+    } catch(err) {
+   	console.error("爬蟲連線失敗",err);
+	alert("無法連線到東華大學圖書管爬蟲引擎")
+    } finally {
+	setIsScraping(false);
+	navigateToResults(searchTerm, initFilters);
+    }
+  }
   const refreshLoans = async () => {
     try {
       if (!token) return;
@@ -2894,6 +2967,15 @@ export default function App() {
 
   return (
     <div className="min-h-dvh bg-gray-50 text-gray-900">
+      
+      {isScraping && (
+	<div className="fixed inset-0 z-[100] bg-black/50 flex flex-col items-center justify-center text-white backdrop-blur-sm">
+          <IconSparkles className="w-12 h-12 animate-pulse text-orange-400 mb-4" />
+          <h2 className="text-xl font-bold">正在從東華大學圖書館抓取資料...</h2>
+          <p className="text-sm opacity-80 mt-2">請稍候，這可能需要幾秒鐘</p>
+        </div>
+      )}
+      
       <Navbar
         goHome={goHome}
         onOpenAccount={() => setRoute({ name: "account" })}
@@ -2903,9 +2985,9 @@ export default function App() {
       {route.name === "home" && (
         <HomePage
           books={books}
-          onPickTopic={(t: string) => goResults(t)}
+          onPickTopic={(t: string) => executeSearch(t)}
           onOpenBook={openBook}
-          onBasicSearch={(q: any) => goResults(q)}
+          onBasicSearch={(q: any) => executeSearch(q)}
           onOpenAdvanced={() => setRoute({ name: "advanced" })}
           onOpenRecommend={() =>
             setRoute({ name: "recommend" })
@@ -2917,7 +2999,7 @@ export default function App() {
         <AdvancedSearchPage
           books={books}
           onSearch={(q, initFilters) =>
-            goResults(q, initFilters)
+            executeSearch(q, initFilters)
           }
           onCancel={goHome}
         />
@@ -2929,7 +3011,7 @@ export default function App() {
           query={route.q ?? ""}
           initFilters={route.initFilters}
           onOpenBook={openBook}
-          onNewSearch={(q: any) => goResults(q)}
+          onNewSearch={(q: any) => executeSearch(q)}
           goAdvanced={() => setRoute({ name: "advanced" })}
         />
       )}
@@ -2957,7 +3039,7 @@ export default function App() {
           books={books}
           history={viewHistory}
           onOpenBook={openBook}
-          onPickTopic={(t: string) => goResults(t)}
+          onPickTopic={(t: string) => executeSearch(t)}
         />
       )}
 
@@ -2980,7 +3062,7 @@ export default function App() {
         onOpenBook={openBook}
         onOpenResults={(q: any) => {
           setAssistantOpen(false);
-          goResults(q);
+          executeSearch(q);
         }}
       />
 
