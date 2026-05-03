@@ -46,3 +46,27 @@ export function BookCard({ book, onViewDetails, isBorrowed = false }: BookCardPr
     </Card>
   );
 }
+
+export function SmallBookCard({ book, onOpen }: any) {
+  return (
+    <button
+      className="w-full text-left border border-gray-200 rounded-2xl p-3 bg-white hover:shadow-sm transition"
+      onClick={() => onOpen?.(book)}
+      aria-label={`開啟 ${book.title} 詳情`}
+    >
+      <div className="flex gap-3">
+        <img src={book.cover} alt="cover" className="w-12 h-16 rounded-md object-cover flex-shrink-0" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold line-clamp-2">{book.title}</div>
+          <div className="text-xs text-gray-600 line-clamp-1">{book.author} ・ {book.year}</div>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {(book.subjects || []).slice(0, 2).map((s: string) => (
+              <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">{s}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
