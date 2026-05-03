@@ -1,21 +1,26 @@
 import { Book } from '../types/book';
 import { Card, CardContent, CardFooter } from './ui/card';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import { Button } from './ui/Button';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
+// 🌟 1. 將介面名稱統一為 onOpen，對齊 HomePage 的傳遞方式
 interface BookCardProps {
-  book: Book;
-  onViewDetails: (book: Book) => void;
+  book: Book | any; // 兼容你的任何書本資料結構
+  onOpen?: (book: any) => void; 
   isBorrowed?: boolean;
 }
 
-export function BookCard({ book, onViewDetails, isBorrowed = false }: BookCardProps) {
+export function BookCard({ book, onOpen, isBorrowed = false }: BookCardProps) {
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => onViewDetails(book)}>
+    <Card 
+      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" 
+      // 🌟 2. 最外層的點擊事件
+      onClick={() => onOpen?.(book)}
+    >
       <div className="aspect-[2/3] relative overflow-hidden bg-gray-100">
         <ImageWithFallback
-          src={book.coverImage}
+          src={book.coverImage || book.cover} // 兼容不同的欄位命名
           alt={book.title}
           className="w-full h-full object-cover"
         />
@@ -26,7 +31,7 @@ export function BookCard({ book, onViewDetails, isBorrowed = false }: BookCardPr
         )}
       </div>
       <CardContent className="p-4">
-        <h3 className="line-clamp-1 mb-1">{book.title}</h3>
+        <h3 className="line-clamp-1 mb-1 font-semibold">{book.title}</h3>
         <p className="text-gray-600 text-sm mb-2">{book.author}</p>
         <Badge variant="outline" className="text-xs">{book.genre}</Badge>
       </CardContent>
@@ -36,8 +41,10 @@ export function BookCard({ book, onViewDetails, isBorrowed = false }: BookCardPr
           size="sm" 
           className="w-full"
           onClick={(e) => {
+            // 🌟 3. 避免事件冒泡 (Event Bubbling)
+            // 這樣點擊按鈕時，不會同時觸發外層 Card 的 onClick
             e.stopPropagation();
-            onViewDetails(book);
+            onOpen?.(book);
           }}
         >
           View Details
@@ -47,7 +54,8 @@ export function BookCard({ book, onViewDetails, isBorrowed = false }: BookCardPr
   );
 }
 
-export function SmallBookCard({ book, onOpen }: any) {
+// 你的 SmallBookCard 我也一併保留，並且確認它也是用 onOpen
+export function SmallBookCard({ book, onOpen }: BookCardProps) {
   return (
     <button
       className="w-full text-left border border-gray-200 rounded-2xl p-3 bg-white hover:shadow-sm transition"
@@ -55,7 +63,11 @@ export function SmallBookCard({ book, onOpen }: any) {
       aria-label={`開啟 ${book.title} 詳情`}
     >
       <div className="flex gap-3">
-        <img src={book.cover} alt="cover" className="w-12 h-16 rounded-md object-cover flex-shrink-0" />
+        <img 
+          src={book.coverImage || book.cover} 
+          alt="cover" 
+          className="w-12 h-16 rounded-md object-cover flex-shrink-0" 
+        />
         <div className="min-w-0">
           <div className="text-sm font-semibold line-clamp-2">{book.title}</div>
           <div className="text-xs text-gray-600 line-clamp-1">{book.author} ・ {book.year}</div>
@@ -69,4 +81,3 @@ export function SmallBookCard({ book, onOpen }: any) {
     </button>
   );
 }
-

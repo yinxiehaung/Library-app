@@ -1,5 +1,16 @@
 from  .extensions import db
 from datetime import datetime
+class Rating(db.Model):
+    __tablename__ = 'ratings'
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True) 
+    book_id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    
+    __table_args__ = (
+        db.CheckConstraint('rating >= 1 AND rating <= 5', name='check_rating_range'),
+    )
+
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)

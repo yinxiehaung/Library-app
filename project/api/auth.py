@@ -22,7 +22,8 @@ login_payload = auth_ns.model('LoginPayload', {
 # 登入成功的回傳模型
 login_success = auth_ns.model('LoginSuccess', {
     'message': fields.String(description='登入成功訊息'),
-    'access_token': fields.String(description='JWT 存取令牌')
+    'access_token': fields.String(description='JWT 存取令牌'),
+    'user_id': fields.Integer(description='使用者 ID')
 })
 
 @auth_ns.route('/register')
@@ -72,6 +73,6 @@ class Login(Resource):
         if user and bcrypt.check_password_hash(user.password_hash, data['password']):
             # 密碼正確，產生 JWT 令牌
             access_token = create_access_token(identity=str(user.id))
-            return {"message": "登入成功", "access_token": access_token}, 200
+            return {"message": "登入成功", "access_token": access_token, "user_id": user.id}, 200
         else:
             return {"error": "使用者名稱或密碼錯誤"}, 401

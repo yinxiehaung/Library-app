@@ -1,61 +1,53 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "./ui/Button";
 import { SmallBookCard } from "./BookCard";
 import { IconSparkles, IconX, IconSend } from "./icons";
 import { classNames } from "../utils/helpers";
-import { tokenize, relevanceScore } from "../utils/search";
-
-function smartSearch(books: any[], q: string, limit = 6) {
-  const qs = q.toLowerCase();
-  const tokens = tokenize(q);
-
-  const subjectHints: string[] = [];
-  if (/(小孩|孩子|親子|教養|躁|焦慮|情緒)/.test(qs)) subjectHints.push("心理", "療癒");
-  if (/(學程式|coding|寫程式|軟體|演算法)/.test(qs)) subjectHints.push("Programming", "科技");
-  if (/(太空|宇宙|科幻|外星)/.test(qs)) subjectHints.push("科幻", "宇宙");
-
-  const scored = (books || []).map((b: any) => {
-    let s = relevanceScore(b, tokens);
-    if ((b.subjects || []).some((s2: string) => subjectHints.includes(s2))) s += 4;
-    return { b, s };
-  });
-
-  const results = scored
-    .filter((x) => x.s > 0)
-    .sort((a, b) => b.s - a.s || b.b.year - a.b.year)
-    .slice(0, limit)
-    .map((x) => x.b);
-
-  return results.length ? results : (books || []).slice(0, Math.min(6, (books || []).length));
-}
 
 export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults }: any) {
-  const [messages, setMessages] = useState<
-    { role: "assistant" | "user"; text: string; items?: any[]; query?: string }[]
-  >(() => [
-    { role: "assistant", text: "嗨～我可以根據你的需求找書。\n試試：「小孩很躁怎麼辦」、「學習寫程式」、「科幻太空冒險」。" },
-  ]);
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<any[]>([{ 
+    role: "assistant", 
+    text: "嗨～我是這座圖書館的 AI 導覽員。\n我可以幫你找書，例如：「我想看懸疑推理小說」、「有沒有適合睡前看的故事？」" 
+  }]);
+  const [isTyping, setIsTyping] = useState(false);
 
-  useEffect(() => {
-    if (!open) setInput("");
-  }, [open]);
-
-  const send = () => {
+  const send = async () => {
     const q = input.trim();
     if (!q) return;
-    setMessages((ms) => [...ms, { role: "user", text: q }]);
+    
+    const newMessages = [...messages, { role: "user", text: q }];
+    setMessages(newMessages);
     setInput("");
-    const candidates = smartSearch(books, q, 6);
-    setMessages((ms) => [
-      ...ms,
-      {
-        role: "assistant",
-        text: `我幫你找了幾本可能適合的書，或你也可以用「${q}」直接查看完整搜尋結果。`,
-        items: candidates,
-        query: q,
-      },
-    ]);
+    setIsTyping(true);
+
+    try {
+      const historyForApi = messages.map(m => ({
+        role: m.role,
+        content: m.text
+      }));
+
+      // 🌟 使用 Nginx 安全暗門
+      const response = await fetch('/ai-api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: q, 
+          history: historyForApi 
+        })
+      });
+      
+      if (!response.ok) throw new Error("Chat API Failed");
+      
+      const data = await response.json();
+      
+      setMessages([...newMessages, { role: "assistant", text: data.response }]);
+    } catch (error) {
+      console.error("Chat API 錯誤:", error);
+      setMessages([...newMessages, { role: "assistant", text: "抱歉，圖書館大腦有點秀逗了，請稍後再試。" }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   if (!open) return null;
@@ -73,7 +65,7 @@ export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults 
             </span>
             AI 小助手
           </div>
-          <button className="p-2 rounded-xl hover:bg-gray-100" onClick={onClose} aria-label="關閉">
+          <button className="p-2 rounded-xl hover:bg-gray-100 transition-colors" onClick={onClose} aria-label="關閉">
             <IconX className="w-5 h-5" />
           </button>
         </div>
@@ -85,11 +77,12 @@ export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults 
                 className={classNames(
                   "max-w-[85%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap",
                   m.role === "user"
-                    ? "bg-blue-600 text-white rounded-br-sm"
-                    : "bg-gray-100 text-gray-900 rounded-bl-sm",
+                    ? "bg-blue-600 text-white rounded-br-sm shadow-sm"
+                    : "bg-gray-100 text-gray-900 rounded-bl-sm"
                 )}
               >
                 {m.text}
+                
                 {m.items && (
                   <div className="mt-2 grid grid-cols-1 gap-2">
                     {m.items.map((b: any) => (
@@ -112,25 +105,35 @@ export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults 
               </div>
             </div>
           ))}
+
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm bg-gray-100 text-gray-500 rounded-bl-sm flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }}></span>
+                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.4s" }}></span>
+              </div>
+            </div>
+          )}
         </div>
 
         <form
-          className="p-3 border-t border-gray-200 flex items-center gap-2"
+          className="p-3 border-t border-gray-200 flex items-center gap-2 bg-gray-50"
           onSubmit={(e) => { e.preventDefault(); send(); }}
         >
           <input
-            className="flex-1 h-11 px-3 rounded-2xl border border-gray-300 outline-none"
-            placeholder="輸入你想找的關鍵字或描述（例如：小孩很躁怎麼辦）"
+            className="flex-1 h-11 px-4 rounded-2xl border border-gray-300 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+            placeholder="輸入想找的關鍵字..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            disabled={isTyping}
           />
-          <Button type="submit" aria-label="送出">
-            <IconSend className="w-4 h-4 mr-1" />
-            送出
+          <Button type="submit" aria-label="送出" disabled={isTyping || !input.trim()}>
+            <IconSend className="w-4 h-4 sm:mr-1" />
+            <span className="hidden sm:inline">送出</span>
           </Button>
         </form>
       </aside>
     </div>
   );
 }
-

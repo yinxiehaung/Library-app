@@ -1,82 +1,73 @@
-import { hasAvailable } from "../utils/helpers";
+import React from "react";
 import { BookCard } from "../components/BookCard";
 import { Button } from "../components/ui/Button";
 
-export function RecommendationsPage({ books, history, onOpenBook, onPickTopic }: any) {
+// 🌟 修改 Props：接收從 App.tsx 傳進來的 AI 推薦結果
+export function RecommendationsPage({ recommendations, history, onOpenBook, onPickTopic, books }: any) {
+  // 為了畫面上能顯示「最近看過」，我們保留 history 的比對邏輯
   const safeBooks = Array.isArray(books) ? books : [];
   const viewedIds = Array.isArray(history) ? history : [];
   const viewedBooks = safeBooks.filter((b) => viewedIds.includes(b.id));
 
-  const subjectScores: Record<string, number> = {};
-  const langScores: Record<string, number> = {};
-  viewedBooks.forEach((b) => {
-    (b.subjects || []).forEach((s: string) => { subjectScores[s] = (subjectScores[s] || 0) + 1; });
-    if (b.language) langScores[b.language] = (langScores[b.language] || 0) + 1;
-  });
-
-  const favSubjects = Object.keys(subjectScores).sort((a, b) => subjectScores[b] - subjectScores[a]).slice(0, 3);
-
-  let recommended: any[] = [];
-  if (viewedBooks.length) {
-    const candidates = safeBooks.filter((b) => !viewedIds.includes(b.id));
-    const scored = candidates
-      .map((b) => {
-        let score = 0;
-        (b.subjects || []).forEach((s: string) => { if (subjectScores[s]) score += subjectScores[s] * 3; });
-        if (langScores[b.language]) score += langScores[b.language] * 2;
-        if (hasAvailable(b)) score += 1;
-        return { book: b, score };
-      })
-      .sort((a, b) => b.score - a.score || b.book.year - a.book.year);
-    recommended = scored.filter((x) => x.score > 0).map((x) => x.book);
-  }
-
-  if (!recommended.length) {
-    recommended = safeBooks.slice().sort((a, b) => b.year - a.year).slice(0, 8);
-  } else {
-    recommended = recommended.slice(0, 8);
-  }
+  // 🌟 推薦來源改為機器 B 回傳的 recommendations
+  const aiRecommended = Array.isArray(recommendations) ? recommendations : [];
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold">為你推薦</h1>
-      <p className="mt-2 text-sm text-gray-600">根據你最近瀏覽的館藏，推薦可能感興趣的書籍。</p>
+      <div className="flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-900">AI 智能推薦</h1>
+        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-md font-medium">Beta</span>
+      </div>
+      <p className="mt-2 text-sm text-gray-600">
+        透過 Sentence Transformer 多語言模型分析，為您在 6 萬筆館藏中尋找最適合的內容。
+      </p>
 
-      {!viewedBooks.length && (
-        <div className="mt-4 border border-dashed border-gray-300 rounded-2xl p-4 bg-white text-sm text-gray-700">
-          <p>目前還沒有瀏覽紀錄，先到首頁逛逛或用關鍵字搜尋吧！</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => onPickTopic?.("文學")}>探索文學主題</Button>
-            <Button size="sm" variant="secondary" onClick={() => onPickTopic?.("科技")}>看看科技 / 程式書</Button>
-          </div>
-        </div>
-      )}
-
+      {/* 第一部分：最近看過 (保留原有的 history 顯示) */}
       {viewedBooks.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-lg font-semibold">最近看過</h2>
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {viewedBooks.slice(0, 4).map((b: any) => <BookCard key={b.id} book={b} onOpen={onOpenBook} />)}
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold text-gray-800">您最近的興趣</h2>
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {viewedBooks.slice(0, 4).map((b: any) => (
+              <BookCard key={b.id} book={b} onOpen={onOpenBook} />
+            ))}
           </div>
         </section>
       )}
 
-      <section className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">推薦書籍</h2>
-        </div>
-        {favSubjects.length > 0 && (
-          <div className="mt-2 text-sm text-gray-600 flex flex-wrap items-center gap-2">
-            <span>根據你常看的主題：</span>
-            {favSubjects.map((s) => (
-              <span key={s} className="inline-flex items-center px-2 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs">{s}</span>
+      {/* 第二部分：AI 推薦結果 (顯示機器 B 的運算結果) */}
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4 text-flex items-center gap-2">
+          為您量身打造
+        </h2>
+        
+        {aiRecommended.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            {aiRecommended.map((b: any) => (
+              <BookCard key={b.id || b.book_id} book={b} onOpen={onOpenBook} />
             ))}
           </div>
+        ) : (
+          <div className="mt-4 border-2 border-dashed border-gray-200 rounded-3xl p-12 bg-white text-center">
+            <div className="text-4xl mb-4">🤖</div>
+            <h3 className="text-gray-900 font-medium">AI 正在觀察您的喜好</h3>
+            <p className="mt-2 text-sm text-gray-500 max-w-xs mx-auto">
+              目前數據不足，請先到首頁瀏覽幾本書籍，AI 就會開始為您計算個人化推薦。
+            </p>
+            <div className="mt-6">
+              <Button onClick={() => onPickTopic?.("科技")}>去看看科技新書</Button>
+            </div>
+          </div>
         )}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {recommended.map((b: any) => <BookCard key={b.id} book={b} onOpen={onOpenBook} />)}
-        </div>
       </section>
+
+      {/* 底部說明 */}
+      <div className="mt-16 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+        <h4 className="text-sm font-semibold text-gray-700">關於此推薦</h4>
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+          此推薦系統由機器 B (AI Server) 驅動。當您點擊書籍時，系統會將匿名化的書籍編號傳送至伺服器，
+          利用 ChromaDB 向量庫進行語意檢索，找出主題、內容與語境最接近的書籍，而非僅依賴簡單的標籤比對。
+        </p>
+      </div>
     </main>
   );
 }
