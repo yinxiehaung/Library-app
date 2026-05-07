@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # 服務一：我們的 Python API
   api-1:
-    build: .
+    build: . 
     volumes:
       - .:/app
     environment: &app_env

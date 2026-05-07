@@ -15,4 +15,4 @@ COPY . .
 
 # 6. 【新增此行】設定容器啟動時要執行的預設命令
 CMD ["python", "run.py"]
-CMD ["sh", "-c", "flask db upgrade && python run.py"]
+CMD ["sh", "-c", "flask db upgrade && gunicorn -w 4 -b 0.0.0.0:5000 run:app"]
