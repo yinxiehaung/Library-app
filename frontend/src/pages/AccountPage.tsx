@@ -12,12 +12,22 @@ type AccountPageProps = {
   onRefreshLoans: () => Promise<void>;
 };
 
+// 🌟 抽離 Tab 型別與設定檔，讓 TypeScript 更嚴謹
+type SubTabKey = "loans" | "holds" | "noti" | "settings";
+
+const SUBTABS: { k: SubTabKey; t: string }[] = [
+  { k: "loans", t: "借閱中" },
+  { k: "holds", t: "預約" },
+  { k: "noti", t: "通知" },
+  { k: "settings", t: "設定" }
+];
+
 export function AccountPage({ user, token, loans, onLogin, onRegister, onLogout, onRefreshLoans }: AccountPageProps) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
   const [tab, setTab] = useState<"login" | "register">("login");
-  const [subtab, setSubtab] = useState<"loans" | "holds" | "noti" | "settings">("loans");
+  const [subtab, setSubtab] = useState<SubTabKey>("loans"); // 🌟 套用精準型別
   const [loading, setLoading] = useState(false);
 
   if (!user) {
@@ -92,8 +102,9 @@ export function AccountPage({ user, token, loans, onLogin, onRegister, onLogout,
         <Button variant="secondary" size="sm" onClick={onLogout}>登出</Button>
       </div>
       <div className="mt-3 flex gap-2">
-        {[{ k: "loans", t: "借閱中" }, { k: "holds", t: "預約" }, { k: "noti", t: "通知" }, { k: "settings", t: "設定" }].map(({ k, t }) => (
-          <Button key={k} variant={subtab === k ? "primary" : "secondary"} size="sm" onClick={() => setSubtab(k as any)}>{t}</Button>
+        {/* 🌟 拔掉 as any，使用強型別 mapping */}
+        {SUBTABS.map(({ k, t }) => (
+          <Button key={k} variant={subtab === k ? "primary" : "secondary"} size="sm" onClick={() => setSubtab(k)}>{t}</Button>
         ))}
       </div>
       <div className="mt-4 border border-gray-200 bg-white rounded-2xl p-6 min-h-[200px]">

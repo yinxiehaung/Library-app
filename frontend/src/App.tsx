@@ -119,9 +119,10 @@ export default function App() {
 
       {route.name === "home" && (
         <HomePage 
-          books={safeBooks} recommendations={safeRecs}
-	  recommendations={safeRecs}
-          onPickTopic={executeSearch} onOpenBook={openBook}
+          books={safeBooks} 
+          recommendations={safeRecs}
+          onPickTopic={executeSearch} 
+          onOpenBook={openBook}
           onBasicSearch={executeSearch} 
           onOpenAdvanced={() => setRoute({ name: "advanced" })}
         />
@@ -140,7 +141,28 @@ export default function App() {
       )}
 
       {route.name === "account" && (
-        <AccountPage user={user} token={token} onLogout={logout} onLogin={() => {}} onRegister={() => {}} loans={[]} onRefreshLoans={() => {}} />
+        <AccountPage 
+          user={user} 
+          token={token} 
+          loans={loans} 
+          onLogout={logout} 
+          onLogin={async (email, password) => {
+            const res = await loginUser(email, password); 
+            setUser(res.user);
+            setToken(res.token);
+            localStorage.setItem(USER_KEY, JSON.stringify(res.user));
+            localStorage.setItem(TOKEN_KEY, res.token);
+            setRoute({ name: "home" }); 
+          }} 
+          onRegister={async (email, password) => {
+            await registerUser(email, password);
+            alert("註冊成功，請登入！");
+          }} 
+          onRefreshLoans={async () => {
+             console.log("刷新借閱紀錄...");
+             // TODO: 未來若有查詢借閱的 API 可以接在這裡
+          }} 
+        />
       )}
 
       <ChatAssistant open={assistantOpen} onClose={() => setAssistantOpen(false)} books={safeBooks} onOpenBook={openBook} onOpenResults={executeSearch} />
