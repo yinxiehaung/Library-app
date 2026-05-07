@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import ReactMarkdown from "react-markdown"; 
 import { Button } from "./ui/Button";
 import { SmallBookCard } from "./BookCard";
 import { IconSparkles, IconX, IconSend } from "./icons";
@@ -22,29 +23,38 @@ export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults 
     setIsTyping(true);
 
     try {
+      // 🌟 1. 將前端對話紀錄轉成 ai_server.py 看得懂的格式
       const historyForApi = messages.map(m => ({
         role: m.role,
         content: m.text
       }));
 
-      // 🌟 使用 Nginx 安全暗門
+      // 🌟 2. 完美對齊 ai_server.py 的 Payload 需求，解決 422 Unprocessable Entity
+      const payload = {
+        message: q,
+        history: historyForApi
+      };
+
+      // 🌟 3. 透過 Nginx 的安全暗門打向後端
       const response = await fetch('/ai-api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: q, 
-          history: historyForApi 
-        })
+        body: JSON.stringify(payload)
       });
       
-      if (!response.ok) throw new Error("Chat API Failed");
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        console.error("API 報錯細節:", errData);
+        throw new Error("Chat API Failed");
+      }
       
       const data = await response.json();
       
       setMessages([...newMessages, { role: "assistant", text: data.response }]);
+
     } catch (error) {
       console.error("Chat API 錯誤:", error);
-      setMessages([...newMessages, { role: "assistant", text: "抱歉，圖書館大腦有點秀逗了，請稍後再試。" }]);
+      setMessages([...newMessages, { role: "assistant", text: "抱歉，圖書館大腦有點秀逗了，請確認 AI 伺服器是否已開啟並允許 CORS。" }]);
     } finally {
       setIsTyping(false);
     }
@@ -81,7 +91,20 @@ export function ChatAssistant({ open, onClose, books, onOpenBook, onOpenResults 
                     : "bg-gray-100 text-gray-900 rounded-bl-sm"
                 )}
               >
-                {m.text}
+                {/* 🌟 4. 使用 ReactMarkdown 渲染排版 */}
+                <ReactMarkdown
+                  components={{
+                    h2: ({ node, ...props }) => <h2 className="text-[15px] font-bold mt-3 mb-1 text-blue-700" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="font-bold" {...props} />,
+                    blockquote: ({ node, ...props }) => (
+                      <blockquote className="border-l-[3px] border-gray-300 pl-3 my-2 text-gray-600 bg-white/50 py-1.5 rounded-r-md" {...props} />
+                    ),
+                    ul: ({ node, ...props }) => <ul className="list-disc pl-5 my-2 space-y-1" {...props} />,
+                    p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-relaxed" {...props} />
+                  }}
+                >
+                  {m.text}
+                </ReactMarkdown>
                 
                 {m.items && (
                   <div className="mt-2 grid grid-cols-1 gap-2">
